@@ -326,37 +326,32 @@ void ReservationSystem::populateFlights() {
     }
     sqlite3_finalize(check);
     
-    // Routes and flights
-    struct Route { string src, dest; double price; };
-    Route routes[] = {
-        {"Mumbai", "Delhi", 4500}, {"Delhi", "Mumbai", 4500},
-        {"Mumbai", "Bangalore", 5500}, {"Bangalore", "Mumbai", 5500},
-        {"Delhi", "Bangalore", 6000}, {"Bangalore", "Delhi", 6000},
-        {"Mumbai", "Goa", 3500}, {"Goa", "Mumbai", 3500},
-        {"Chennai", "Bangalore", 3500}, {"Bangalore", "Chennai", 3500},
-        {"Delhi", "Kolkata", 6500}, {"Kolkata", "Delhi", 6500},
-        {"Mumbai", "Chennai", 5000}, {"Chennai", "Mumbai", 5000},
-        {"Bangalore", "Kolkata", 7000}, {"Kolkata", "Bangalore", 7000},
-        {"Delhi", "Jaipur", 3000}, {"Jaipur", "Delhi", 3000},
-        {"Mumbai", "Pune", 2500}, {"Pune", "Mumbai", 2500},
-        {"Chennai", "Hyderabad", 4000}, {"Hyderabad", "Chennai", 4000},
-        {"Bangalore", "Kochi", 5000}, {"Kochi", "Bangalore", 5000},
-        {"Delhi", "Hyderabad", 5500}, {"Hyderabad", "Delhi", 5500},
-        {"Mumbai", "Kolkata", 7500}, {"Kolkata", "Mumbai", 7500},
-        {"Chennai", "Kochi", 4500}, {"Kochi", "Chennai", 4500},
-        {"Pune", "Bangalore", 4000}, {"Bangalore", "Pune", 4000},
-        {"Jaipur", "Mumbai", 4200}, {"Mumbai", "Jaipur", 4200},
-        {"Goa", "Bangalore", 3800}, {"Bangalore", "Goa", 3800}
+    // All 10 cities
+    vector<string> cities = {
+        "Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata",
+        "Hyderabad", "Pune", "Goa", "Jaipur", "Kochi"
     };
+    
+    // Generate ALL possible city pairs (both directions)
+    // 10 cities × 9 other cities = 90 directional routes
+    vector<pair<string, string>> routes;
+    for (size_t i = 0; i < cities.size(); i++) {
+        for (size_t j = 0; j < cities.size(); j++) {
+            if (i != j) {  // Don't create routes from city to itself
+                routes.push_back({cities[i], cities[j]});
+            }
+        }
+    }
     
     string names[] = {"Sky Express", "Cloud Nine", "Wind Jet", "Star Flight", "Thunder Express"};
     string times[] = {"06:00", "10:00", "14:00", "18:00", "21:00"};
     
     // Generate flights for next 30 days
     time_t now = time(nullptr);
-    int numRoutes = sizeof(routes)/sizeof(routes[0]);
     
     sqlite3_exec(db, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+    
+    int flightCounter = 1001;
     
     for (int day = 0; day < 30; day++) {
         time_t futureTime = now + (day * 86400);
@@ -364,22 +359,29 @@ void ReservationSystem::populateFlights() {
         char dateStr[11];
         strftime(dateStr, sizeof(dateStr), "%Y-%m-%d", tm);
         
-        for (int r = 0; r < numRoutes; r++) {
+        for (size_t r = 0; r < routes.size(); r++) {
+            string source = routes[r].first;
+            string destination = routes[r].second;
+            
+            // Generate base price based on distance (pseudo-calculation)
+            int basePrice = 2500 + ((flightCounter * 37) % 4500);
+            
             for (int i = 0; i < 5; i++) {
-                // Generate unique flight number based on route index and time slot
                 stringstream flightNum;
-                flightNum << "SP" << (r * 5 + i + 1001);
+                flightNum << "SP" << flightCounter;
                 
                 stringstream sql;
                 sql << "INSERT OR IGNORE INTO flights VALUES ('"
                     << flightNum.str() << "','"
                     << names[i] << "','"
-                    << routes[r].src << "','"
-                    << routes[r].dest << "','"
+                    << source << "','"
+                    << destination << "','"
                     << dateStr << "','"
                     << dateStr << " " << times[i] << "',"
-                    << routes[r].price << ");";
+                    << basePrice << ");";
                 sqlite3_exec(db, sql.str().c_str(), nullptr, nullptr, nullptr);
+                
+                flightCounter++;
             }
         }
     }

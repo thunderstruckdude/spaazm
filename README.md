@@ -26,8 +26,9 @@ A modern C++ flight reservation system with Qt6 GUI, featuring persistent SQLite
 ## ✨ Features
 
 ### Core Functionality
-- ✅ **Persistent Flight Database**: 5,400+ flights across 36 routes and 30 days
+- ✅ **Persistent Flight Database**: 13,500 flights across 90 routes and 30 days
 - ✅ **10 Major Indian Cities**: Mumbai, Delhi, Bangalore, Chennai, Kolkata, Hyderabad, Pune, Goa, Jaipur, Kochi
+- ✅ **Complete Route Coverage**: All possible city pair combinations
 - ✅ **Real-time Seat Availability**: Instant updates across all sessions
 - ✅ **Passenger Information Management**: Name, email, and phone validation
 - ✅ **Booking History**: Complete record of all reservations
