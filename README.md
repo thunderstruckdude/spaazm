@@ -4,15 +4,22 @@ A modern C++ flight reservation system with Qt6 GUI, featuring persistent SQLite
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [Architecture Overview](#architecture-overview)
-- [System Design](#system-design)
-- [Database Schema](#database-schema)
-- [OOP Design Patterns](#oop-design-patterns)
-- [Technologies Used](#technologies-used)
-- [Installation](#installation)
-- [Usage Flow](#usage-flow)
-- [Code Structure](#code-structure)
+- [Features](#-features)
+- [Architecture Overview](#️-architecture-overview)
+- [System Design](#-system-design)
+- [Database Schema](#-database-schema)
+- [OOP Design Patterns](#-oop-design-patterns)
+- [Technologies Used](#️-technologies-used)
+- [Installation](#-installation)
+- [Usage Flow](#-usage-flow)
+- [Code Structure](#-code-structure)
+- [Dynamic Pricing Formula](#-dynamic-pricing-formula)
+- [Database Operations](#️-database-operations)
+- [Learning Outcomes](#-learning-outcomes)
+- [Troubleshooting](#-troubleshooting)
+- [Future Enhancements](#-future-enhancements)
+- [License](#-license)
+- [Author](#-author)
 
 ---
 
