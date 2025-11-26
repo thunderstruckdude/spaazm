@@ -326,18 +326,64 @@ ReservationSystem HAS-A
 ## 📦 Installation
 
 ### Prerequisites
+
+#### Linux
+
+**Arch Linux**
 ```bash
-# Arch Linux
 sudo pacman -S qt6-base cmake gcc sqlite
+```
 
-# Ubuntu/Debian
+**Ubuntu/Debian**
+```bash
+sudo apt update
 sudo apt install qt6-base-dev cmake build-essential libsqlite3-dev
+```
 
-# Fedora
+**Fedora**
+```bash
 sudo dnf install qt6-qtbase-devel cmake gcc-c++ sqlite-devel
 ```
 
+#### Windows
+
+**Option 1: Using MSYS2 (Recommended)**
+
+1. **Install MSYS2** from https://www.msys2.org/
+2. **Open MSYS2 MinGW 64-bit terminal** and run:
+```bash
+pacman -Syu
+pacman -S mingw-w64-x86_64-qt6-base mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc mingw-w64-x86_64-sqlite3
+```
+
+**Option 2: Using Qt Installer**
+
+1. **Download Qt Online Installer** from https://www.qt.io/download-qt-installer
+2. **Install Qt 6.x** with following components:
+   - Qt 6.x for MinGW or MSVC
+   - CMake
+   - MinGW compiler (or use Visual Studio)
+3. **Install SQLite3**:
+   - Download precompiled binaries from https://www.sqlite.org/download.html
+   - Extract to `C:\sqlite3`
+   - Add to PATH: `C:\sqlite3`
+
+#### macOS
+
+```bash
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install qt@6 cmake sqlite3
+```
+
+---
+
 ### Build Instructions
+
+#### Linux / macOS
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -355,11 +401,65 @@ cmake --build .
 ./bin/FlightReservation
 ```
 
+#### Windows (MSYS2)
+
+```bash
+# Clone repository (in MSYS2 MinGW 64-bit terminal)
+git clone <repository-url>
+cd spaazm
+
+# Create build directory
+mkdir build
+cd build
+
+# Configure and build
+cmake .. -G "MinGW Makefiles"
+cmake --build .
+
+# Run application
+./bin/FlightReservation.exe
+```
+
+#### Windows (Visual Studio)
+
+```powershell
+# Clone repository (in Command Prompt or PowerShell)
+git clone <repository-url>
+cd spaazm
+
+# Create build directory
+mkdir build
+cd build
+
+# Configure (replace paths with your Qt installation)
+cmake .. -DCMAKE_PREFIX_PATH="C:/Qt/6.x.x/msvc2019_64"
+
+# Build
+cmake --build . --config Release
+
+# Run application
+.\bin\Release\FlightReservation.exe
+```
+
+#### Windows (Qt Creator IDE)
+
+1. **Open Qt Creator**
+2. **File → Open File or Project**
+3. **Select** `CMakeLists.txt` from the spaazm folder
+4. **Configure Project** with your Qt kit
+5. **Build** (Ctrl+B)
+6. **Run** (Ctrl+R)
+
+---
+
 ### First Run
+
 On first launch, the application will:
-1. Create `spaazm_flights.db` in the build directory
+1. Create `spaazm_flights.db` in the build directory (or current working directory)
 2. Populate with 5,400 flights (36 routes × 5 flights × 30 days)
 3. This takes ~2 seconds and only happens once
+
+**Note for Windows**: The database will be created where the executable is run from. For best results, run from the build directory.
 
 ---
 
