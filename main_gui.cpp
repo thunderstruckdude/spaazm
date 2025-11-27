@@ -16,6 +16,7 @@
 #include <QFrame>
 #include <QDateEdit>
 #include <QDate>
+#include <iostream>
 #include "flight_system.h"
 
 using namespace std;
@@ -417,7 +418,9 @@ QWidget* MainWindow::createFlightsPage() {
     dateSelector = new QDateEdit();
     dateSelector->setCalendarPopup(true);
     dateSelector->setMinimumDate(QDate::currentDate());
+    dateSelector->setMaximumDate(QDate::currentDate().addDays(59));  // Database has 60 days
     dateSelector->setDate(QDate::currentDate().addDays(7));
+    dateSelector->setDisplayFormat("MMM dd, yyyy");
     dateSelector->setStyleSheet(
         "QDateEdit { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; "
         "font-size: 14px; background: white; min-width: 200px; }"
@@ -572,12 +575,16 @@ void MainWindow::searchFlights() {
     }
     
     // Debug output
-    qDebug() << "Searching flights from" << source << "to" << dest << "on" << dateStr;
+    cout << "Searching flights from " << source.toStdString() << " to " 
+         << dest.toStdString() << " on " << dateStr.toStdString() << endl;
     
     system->searchFlights(dateStr.toStdString(), source.toStdString(), dest.toStdString());
     
     // Debug output
-    qDebug() << "Flights generated:" << system->getFlights().size();
+    cout << "Flights found: " << system->getFlights().size() << endl;
+    if (system->getFlights().empty()) {
+        cout << "No flights found for this route and date!" << endl;
+    }
     
     QLayoutItem* item;
     while ((item = flightsLayout->takeAt(0)) != nullptr) {
@@ -725,33 +732,47 @@ void MainWindow::showBookingDialog(Flight* flight) {
     seatScroll->setFrameShape(QFrame::StyledPanel);
     seatScroll->setStyleSheet("QScrollArea { background: white; border-radius: 8px; border: 1px solid #e5e7eb; }");
 
-    QWidget* seatContainer = new QWidget();
-    QVBoxLayout* seatLayout = new QVBoxLayout(seatContainer);
-    seatLayout->setSpacing(15);
-    seatLayout->setContentsMargins(20, 20, 20, 20);
+    // Store selected seat in dialog property
+    dialog->setProperty("selectedSeat", QVariant::fromValue<void*>(nullptr));
 
-    vector<SeatButton*> seatButtons;
-    Seat* selectedSeat = nullptr;
+    layout->addWidget(seatScroll, 1);
 
-    auto updateSeats = [&](const QString& seatClass) {
-        // Properly clean up all widgets and layouts
-        QLayoutItem* item;
-        while ((item = seatLayout->takeAt(0)) != nullptr) {
-            if (item->widget()) {
-                delete item->widget();
-            }
-            if (item->layout()) {
-                QLayoutItem* subItem;
-                while ((subItem = item->layout()->takeAt(0)) != nullptr) {
-                    delete subItem->widget();
-                    delete subItem;
-                }
-                delete item->layout();
-            }
-            delete item;
+    QLabel* priceLabel = new QLabel();
+    priceLabel->setStyleSheet("font-size: 20px; font-weight: 700; color: #059669; margin-top: 10px;");
+    layout->addWidget(priceLabel);
+
+    auto updatePrice = [=]() {
+        Seat* selectedSeat = static_cast<Seat*>(dialog->property("selectedSeat").value<void*>());
+        if (selectedSeat) {
+            double price = flight->calculatePrice(
+                classCombo->currentText().toStdString(),
+                time(nullptr)
+            );
+            priceLabel->setText(QString("Total Price: ₹%1").arg(price, 0, 'f', 2));
+        } else {
+            priceLabel->setText("Select a seat to see the price");
         }
-        seatButtons.clear();
-        selectedSeat = nullptr;
+    };
+
+    // Now define updateSeats with access to updatePrice
+    auto updateSeats = [dialog, flight, seatScroll, updatePrice](const QString& seatClass) {
+        // Clear the seat selection
+        dialog->setProperty("selectedSeat", QVariant::fromValue<void*>(nullptr));
+        
+        // Update price when seat selection is cleared
+        updatePrice();
+        
+        // Clear existing layout
+        QWidget* oldWidget = seatScroll->takeWidget();
+        if (oldWidget) {
+            delete oldWidget;
+        }
+        
+        // Create new container
+        QWidget* newContainer = new QWidget();
+        QVBoxLayout* newLayout = new QVBoxLayout(newContainer);
+        newLayout->setSpacing(15);
+        newLayout->setContentsMargins(20, 20, 20, 20);
 
         vector<Seat*> allSeats = flight->getSeatsByClass(seatClass.toStdString());
         
@@ -759,7 +780,8 @@ void MainWindow::showBookingDialog(Flight* flight) {
             QLabel* noSeats = new QLabel("No seats in this class");
             noSeats->setStyleSheet("color: #ef4444; padding: 20px; font-size: 14px;");
             noSeats->setAlignment(Qt::AlignCenter);
-            seatLayout->addWidget(noSeats);
+            newLayout->addWidget(noSeats);
+            seatScroll->setWidget(newContainer);
             return;
         }
 
@@ -772,7 +794,7 @@ void MainWindow::showBookingDialog(Flight* flight) {
         QLabel* legendLabel = new QLabel(QString("%1 Class - %2/%3 seats available")
             .arg(seatClass).arg(availableCount).arg(allSeats.size()));
         legendLabel->setStyleSheet("font-weight: 600; color: #1f2937; font-size: 14px;");
-        seatLayout->addWidget(legendLabel);
+        newLayout->addWidget(legendLabel);
 
         // Add legend for seat colors
         QHBoxLayout* legendLayout = new QHBoxLayout();
@@ -790,52 +812,45 @@ void MainWindow::showBookingDialog(Flight* flight) {
         legendLayout->addWidget(selectedLegend);
         
         legendLayout->addStretch();
-        seatLayout->addLayout(legendLayout);
+        newLayout->addLayout(legendLayout);
 
         QGridLayout* seatsGrid = new QGridLayout();
         seatsGrid->setSpacing(10);
 
         int seatsPerRow = (seatClass == "Economy") ? 10 : 5;
         
+        // Store all buttons so we can update their selection state
+        QList<SeatButton*> allButtons;
+        
         for (size_t i = 0; i < allSeats.size(); i++) {
             SeatButton* btn = new SeatButton(allSeats[i]);
-            connect(btn, &SeatButton::seatSelected, [&, btn](Seat* seat) {
-                for (SeatButton* sb : seatButtons) {
+            allButtons.append(btn);
+            
+            QObject::connect(btn, &SeatButton::seatSelected, dialog, [dialog, allButtons, btn, updatePrice](Seat* seat) {
+                // Deselect all buttons
+                for (SeatButton* sb : allButtons) {
                     sb->setSelected(false);
                 }
+                // Select this button
                 btn->setSelected(true);
-                selectedSeat = seat;
+                // Store the selected seat in dialog property
+                dialog->setProperty("selectedSeat", QVariant::fromValue<void*>(seat));
+                // Update the price display
+                updatePrice();
             });
-            seatButtons.push_back(btn);
+            
             seatsGrid->addWidget(btn, i / seatsPerRow, i % seatsPerRow);
         }
 
-        seatLayout->addLayout(seatsGrid);
-        seatLayout->addStretch();
+        newLayout->addLayout(seatsGrid);
+        newLayout->addStretch();
+        
+        seatScroll->setWidget(newContainer);
     };
 
     updateSeats(classCombo->currentText());
     connect(classCombo, &QComboBox::currentTextChanged, updateSeats);
-
-    seatScroll->setWidget(seatContainer);
-    layout->addWidget(seatScroll, 1);
-
-    QLabel* priceLabel = new QLabel();
-    priceLabel->setStyleSheet("font-size: 20px; font-weight: 700; color: #059669; margin-top: 10px;");
-    layout->addWidget(priceLabel);
-
-    auto updatePrice = [&]() {
-        if (selectedSeat) {
-            double price = flight->calculatePrice(
-                classCombo->currentText().toStdString(),
-                time(nullptr)
-            );
-            priceLabel->setText(QString("Total Price: ₹%1").arg(price, 0, 'f', 2));
-        } else {
-            priceLabel->setText("Select a seat to see the price");
-        }
-    };
-
+    
     connect(classCombo, &QComboBox::currentTextChanged, updatePrice);
     updatePrice();
 
@@ -857,7 +872,7 @@ void MainWindow::showBookingDialog(Flight* flight) {
         "border-radius: 8px; padding: 12px 24px; font-weight: 600; }"
         "QPushButton:hover { background: #4f46e5; }"
     );
-    connect(confirmBtn, &QPushButton::clicked, [=, &selectedSeat]() {
+    connect(confirmBtn, &QPushButton::clicked, [=]() {
         if (nameInput->text().isEmpty()) {
             QMessageBox::warning(dialog, "Error", "Please enter passenger name");
             return;
@@ -870,6 +885,8 @@ void MainWindow::showBookingDialog(Flight* flight) {
             QMessageBox::warning(dialog, "Error", "Please enter phone number");
             return;
         }
+        
+        Seat* selectedSeat = static_cast<Seat*>(dialog->property("selectedSeat").value<void*>());
         if (!selectedSeat) {
             QMessageBox::warning(dialog, "Error", "Please select a seat");
             return;

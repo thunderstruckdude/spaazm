@@ -26,9 +26,10 @@ A modern C++ flight reservation system with Qt6 GUI, featuring persistent SQLite
 ## ✨ Features
 
 ### Core Functionality
-- ✅ **Persistent Flight Database**: 13,500 flights across 90 routes and 30 days
+- ✅ **Persistent Flight Database**: 27,000 flights across 90 routes and 60 days
 - ✅ **10 Major Indian Cities**: Mumbai, Delhi, Bangalore, Chennai, Kolkata, Hyderabad, Pune, Goa, Jaipur, Kochi
 - ✅ **Complete Route Coverage**: All possible city pair combinations
+- ✅ **Extended Date Range**: November 2025 through January 2026
 - ✅ **Real-time Seat Availability**: Instant updates across all sessions
 - ✅ **Passenger Information Management**: Name, email, and phone validation
 - ✅ **Booking History**: Complete record of all reservations
@@ -464,7 +465,7 @@ cmake --build . --config Release
 
 On first launch, the application will:
 1. Create `spaazm_flights.db` in the build directory (or current working directory)
-2. Populate with 5,400 flights (36 routes × 5 flights × 30 days)
+2. Populate with 27,000 flights (90 routes × 5 flights × 60 days)
 3. This takes ~2 seconds and only happens once
 
 **Note for Windows**: The database will be created where the executable is run from. For best results, run from the build directory.
@@ -593,7 +594,7 @@ spaazm/
   - `sqlite3* db` (database connection)
 - **Key Methods**:
   - `initDatabase()`: Creates tables on first run
-  - `populateFlights()`: Generates 30 days of flights
+  - `populateFlights()`: Generates 60 days of flights (through January 2026)
   - `searchFlights(date, source, dest)`: Queries database
   - `loadBookedSeats(flight)`: Restores seat status
   - `addBooking(...)`: Creates and persists booking

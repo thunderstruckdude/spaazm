@@ -181,12 +181,17 @@ ReservationSystem::~ReservationSystem() {
 void ReservationSystem::searchFlights(const string& dateStr, const string& source, const string& destination) {
     clearFlights();
     
-    if (!db) return;
+    if (!db) {
+        cerr << "Database not initialized!" << endl;
+        return;
+    }
     
     stringstream ss;
     ss << "SELECT flight_number, flight_name, source, destination, departure_time, base_price "
        << "FROM flights WHERE date = '" << dateStr << "' "
        << "AND source = '" << source << "' AND destination = '" << destination << "';";
+    
+    cout << "SQL Query: " << ss.str() << endl;
     
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, ss.str().c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
