@@ -815,14 +815,31 @@ sudo pacman -S sqlite            # Arch Linux
 - Ensure write permissions in build directory
 - Database is created in current working directory when app runs
 - Run from build directory: `cd build && ./bin/FlightReservation`
+- **Windows**: Run from MSYS2 terminal to see debug output
 
 **No cities in dropdown**
-- Delete `spaazm_flights.db` and restart
+- **Fixed in latest version**: Dropdowns now use fallback city list if database fails
+- If still empty: Delete `spaazm_flights.db` and restart
+- Check console output for error messages
 - Database will repopulate automatically
+
+**No flights generated (Windows MSYS2)**
+- **Fixed in latest version**: Added comprehensive error handling
+- Console now shows database initialization progress
+- Run from terminal to see debug messages:
+  - "Database opened successfully"
+  - "Tables created successfully"
+  - "Successfully populated X flights"
+- If no output, check file permissions in build directory
 
 **Seats not updating**
 - Booking saves to database immediately
 - Search again to reload flight with updated seats
+
+**Windows-specific issues**
+- See `WINDOWS_TESTING.md` for detailed Windows troubleshooting
+- Ensure SQLite3 DLL is in PATH or same directory as executable
+- Run from MSYS2 terminal for proper console output
 
 ---
 
