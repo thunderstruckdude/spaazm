@@ -1,5 +1,8 @@
 #include "flight_system.h"
 #include <sqlite3.h>
+#include <iostream>
+
+using namespace std;
 
 // ==================== SEAT IMPLEMENTATION ====================
 
@@ -207,7 +210,11 @@ void ReservationSystem::searchFlights(const string& dateStr, const string& sourc
 
 vector<string> ReservationSystem::getUniqueCities() const {
     vector<string> cities;
-    if (!db) return cities;
+    if (!db) {
+        // Fallback to hardcoded cities if database is not available
+        return {"Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata",
+                "Hyderabad", "Pune", "Goa", "Jaipur", "Kochi"};
+    }
     
     sqlite3_stmt* stmt;
     const char* sql = "SELECT DISTINCT source FROM flights UNION SELECT DISTINCT destination FROM flights ORDER BY 1;";
@@ -217,6 +224,12 @@ vector<string> ReservationSystem::getUniqueCities() const {
             cities.push_back(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)));
         }
         sqlite3_finalize(stmt);
+    }
+    
+    // If no cities found in database, return hardcoded list
+    if (cities.empty()) {
+        return {"Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata",
+                "Hyderabad", "Pune", "Goa", "Jaipur", "Kochi"};
     }
     
     return cities;
@@ -276,9 +289,12 @@ bool ReservationSystem::cancelBooking(int bookingId) {
 void ReservationSystem::initDatabase() {
     int rc = sqlite3_open("spaazm_flights.db", &db);
     if (rc) {
+        cerr << "Failed to open database: " << sqlite3_errmsg(db) << endl;
         db = nullptr;
         return;
     }
+    
+    cout << "Database opened successfully" << endl;
     
     const char* sql = 
         "CREATE TABLE IF NOT EXISTS flights ("
@@ -310,21 +326,38 @@ void ReservationSystem::initDatabase() {
         "passenger_name TEXT,"
         "PRIMARY KEY (flight_number, flight_date, seat_number));";
     
-    sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
+    char* errMsg = nullptr;
+    rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        cerr << "SQL error: " << errMsg << endl;
+        sqlite3_free(errMsg);
+    } else {
+        cout << "Tables created successfully" << endl;
+    }
+    
     populateFlights();
 }
 
 void ReservationSystem::populateFlights() {
-    if (!db) return;
+    if (!db) {
+        cerr << "Database not initialized, cannot populate flights" << endl;
+        return;
+    }
     
     // Check if already populated
     sqlite3_stmt* check;
-    sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM flights;", -1, &check, nullptr);
-    if (sqlite3_step(check) == SQLITE_ROW && sqlite3_column_int(check, 0) > 0) {
+    int rc = sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM flights;", -1, &check, nullptr);
+    if (rc == SQLITE_OK) {
+        if (sqlite3_step(check) == SQLITE_ROW) {
+            int count = sqlite3_column_int(check, 0);
+            if (count > 0) {
+                cout << "Database already has " << count << " flights" << endl;
+                sqlite3_finalize(check);
+                return;
+            }
+        }
         sqlite3_finalize(check);
-        return;
     }
-    sqlite3_finalize(check);
     
     // All 10 cities
     vector<string> cities = {
@@ -386,7 +419,15 @@ void ReservationSystem::populateFlights() {
         }
     }
     
-    sqlite3_exec(db, "COMMIT;", nullptr, nullptr, nullptr);
+    char* errMsg = nullptr;
+    rc = sqlite3_exec(db, "COMMIT;", nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        cerr << "Failed to commit transaction: " << errMsg << endl;
+        sqlite3_free(errMsg);
+    } else {
+        cout << "Successfully populated " << (flightCounter - 1001) << " flights" << endl;
+        cout << "Routes: " << routes.size() << " (all city pairs)" << endl;
+    }
 }
 
 void ReservationSystem::loadFlights() {
