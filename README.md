@@ -395,7 +395,7 @@ brew install qt@6 cmake sqlite3
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/thunderstruckdude/spaazm.git
 cd spaazm
 
 # Create build directory
@@ -414,7 +414,7 @@ cmake --build .
 
 ```bash
 # Clone repository (in MSYS2 MinGW 64-bit terminal)
-git clone <repository-url>
+git clone https://github.com/thunderstruckdude/spaazm.git
 cd spaazm
 
 # Create build directory
@@ -433,7 +433,7 @@ cmake --build .
 
 ```powershell
 # Clone repository (in Command Prompt or PowerShell)
-git clone <repository-url>
+git clone https://github.com/thunderstruckdude/spaazm.git
 cd spaazm
 
 # Create build directory
