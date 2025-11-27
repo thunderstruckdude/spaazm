@@ -8,6 +8,8 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QListView>
+#include <QPalette>
 #include <QMessageBox>
 #include <QStackedWidget>
 #include <QScrollArea>
@@ -328,9 +330,32 @@ QWidget* MainWindow::createFlightsPage() {
     for (const auto& city : cities) {
         sourceSelector->addItem(QString::fromStdString(city));
     }
+    
+    // Set up the dropdown list view with explicit palette
+    QListView* sourceView = new QListView();
+    sourceView->setStyleSheet(
+        "QListView { background-color: white; color: black; border: 1px solid #d1d5db; "
+        "border-radius: 4px; padding: 4px; outline: none; }"
+        "QListView::item { padding: 8px; min-height: 25px; background-color: white; color: black; }"
+        "QListView::item:hover { background-color: #f3f4f6; }"
+        "QListView::item:selected { background-color: #eef2ff; color: #4f46e5; }"
+    );
+    QPalette sourcePalette = sourceView->palette();
+    sourcePalette.setColor(QPalette::Base, QColor(255, 255, 255));  // White background
+    sourcePalette.setColor(QPalette::Text, QColor(0, 0, 0));  // Black text
+    sourcePalette.setColor(QPalette::Window, QColor(255, 255, 255));
+    sourcePalette.setColor(QPalette::WindowText, QColor(0, 0, 0));
+    sourcePalette.setColor(QPalette::Highlight, QColor(238, 242, 255));  // Selection background
+    sourcePalette.setColor(QPalette::HighlightedText, QColor(79, 70, 229));  // Selection text
+    sourceView->setPalette(sourcePalette);
+    sourceSelector->setView(sourceView);
+    
     sourceSelector->setStyleSheet(
         "QComboBox { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; min-width: 180px; }"
+        "font-size: 14px; background-color: white; color: black; min-width: 180px; }"
+        "QComboBox::drop-down { border: none; width: 30px; }"
+        "QComboBox::down-arrow { image: url(none); border-left: 5px solid transparent; "
+        "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
     );
     fromLayout->addWidget(sourceSelector);
     routeLayout->addLayout(fromLayout);
@@ -350,9 +375,32 @@ QWidget* MainWindow::createFlightsPage() {
         destSelector->addItem(QString::fromStdString(city));
     }
     destSelector->setCurrentIndex(1);
+    
+    // Set up the dropdown list view with explicit palette
+    QListView* destView = new QListView();
+    destView->setStyleSheet(
+        "QListView { background-color: white; color: black; border: 1px solid #d1d5db; "
+        "border-radius: 4px; padding: 4px; outline: none; }"
+        "QListView::item { padding: 8px; min-height: 25px; background-color: white; color: black; }"
+        "QListView::item:hover { background-color: #f3f4f6; }"
+        "QListView::item:selected { background-color: #eef2ff; color: #4f46e5; }"
+    );
+    QPalette destPalette = destView->palette();
+    destPalette.setColor(QPalette::Base, QColor(255, 255, 255));  // White background
+    destPalette.setColor(QPalette::Text, QColor(0, 0, 0));  // Black text
+    destPalette.setColor(QPalette::Window, QColor(255, 255, 255));
+    destPalette.setColor(QPalette::WindowText, QColor(0, 0, 0));
+    destPalette.setColor(QPalette::Highlight, QColor(238, 242, 255));  // Selection background
+    destPalette.setColor(QPalette::HighlightedText, QColor(79, 70, 229));  // Selection text
+    destView->setPalette(destPalette);
+    destSelector->setView(destView);
+    
     destSelector->setStyleSheet(
         "QComboBox { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; min-width: 180px; }"
+        "font-size: 14px; background-color: white; color: black; min-width: 180px; }"
+        "QComboBox::drop-down { border: none; width: 30px; }"
+        "QComboBox::down-arrow { image: url(none); border-left: 5px solid transparent; "
+        "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
     );
     toLayout->addWidget(destSelector);
     routeLayout->addLayout(toLayout);
@@ -656,7 +704,15 @@ void MainWindow::showBookingDialog(Flight* flight) {
     classCombo->addItems({"Economy", "Business", "First"});
     classCombo->setStyleSheet(
         "QComboBox { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; }"
+        "font-size: 14px; background-color: #ffffff; color: #1f2937; }"
+        "QComboBox::drop-down { border: none; width: 30px; background-color: transparent; }"
+        "QComboBox::down-arrow { image: url(none); border-left: 5px solid transparent; "
+        "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
+        "QComboBox QAbstractItemView { background-color: #ffffff; color: #1f2937; border: 1px solid #d1d5db; "
+        "border-radius: 4px; padding: 4px; outline: none; selection-background-color: #eef2ff; selection-color: #4f46e5; }"
+        "QComboBox QAbstractItemView::item { padding: 8px; min-height: 25px; background-color: #ffffff; color: #1f2937; }"
+        "QComboBox QAbstractItemView::item:hover { background-color: #f3f4f6; }"
+        "QComboBox QAbstractItemView::item:selected { background-color: #eef2ff; color: #4f46e5; }"
     );
     layout->addWidget(classCombo);
 
