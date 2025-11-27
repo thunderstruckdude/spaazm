@@ -70,7 +70,9 @@ public:
         // Price and availability
         QHBoxLayout* infoLayout = new QHBoxLayout();
         
-        QLabel* priceLabel = new QLabel(QString("Starting from ₹%1").arg(flight->getBasePrice(), 0, 'f', 0));
+        // Calculate actual Economy class price (cheapest option)
+        double economyPrice = flight->calculatePrice("Economy", time(nullptr));
+        QLabel* priceLabel = new QLabel(QString("Starting from ₹%1").arg(economyPrice, 0, 'f', 0));
         priceLabel->setStyleSheet("font-size: 16px; font-weight: 600; color: #059669;");
         infoLayout->addWidget(priceLabel);
         

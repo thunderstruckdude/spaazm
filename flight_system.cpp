@@ -413,12 +413,60 @@ void ReservationSystem::populateFlights() {
             string source = routes[r].first;
             string destination = routes[r].second;
             
-            // Generate base price based on distance (pseudo-calculation)
-            int basePrice = 2500 + ((flightCounter * 37) % 4500);
+            // Calculate route-based pricing (distance approximation)
+            // Popular/longer routes cost more
+            int routeMultiplier = 100;
+            if (source == "Mumbai" || destination == "Mumbai" ||
+                source == "Delhi" || destination == "Delhi" ||
+                source == "Bangalore" || destination == "Bangalore") {
+                routeMultiplier = 150; // Metro cities cost more
+            }
+            if ((source == "Goa" && destination == "Mumbai") || 
+                (source == "Mumbai" && destination == "Goa") ||
+                (source == "Delhi" && destination == "Bangalore") ||
+                (source == "Bangalore" && destination == "Delhi")) {
+                routeMultiplier = 180; // Popular tourist/business routes
+            }
+            
+            // Base price varies by route with some pseudo-randomness
+            int routeBase = 2000 + (r * 47) % 3000;
             
             for (int i = 0; i < 5; i++) {
                 stringstream flightNum;
                 flightNum << "SP" << flightCounter;
+                
+                // Time-based pricing variation
+                double timeMultiplier = 1.0;
+                if (i == 0) timeMultiplier = 0.85;      // Early morning: cheaper
+                else if (i == 1) timeMultiplier = 1.1;  // Mid-morning: expensive
+                else if (i == 2) timeMultiplier = 1.0;  // Afternoon: normal
+                else if (i == 3) timeMultiplier = 1.15; // Evening: most expensive
+                else if (i == 4) timeMultiplier = 0.95; // Night: slightly cheaper
+                
+                // Add carrier-specific variation
+                double carrierMultiplier = 1.0;
+                if (names[i] == "Sky Express") carrierMultiplier = 0.9;      // Budget
+                else if (names[i] == "Cloud Nine") carrierMultiplier = 1.1;  // Premium
+                else if (names[i] == "Wind Jet") carrierMultiplier = 0.95;   // Low-cost
+                else if (names[i] == "Star Flight") carrierMultiplier = 1.05; // Mid-range
+                else if (names[i] == "Thunder Express") carrierMultiplier = 1.0; // Standard
+                
+                // Day-of-week variation (weekends slightly more expensive)
+                double dayMultiplier = 1.0;
+                if (tm->tm_wday == 0 || tm->tm_wday == 6) {
+                    dayMultiplier = 1.08; // Weekend surcharge
+                }
+                
+                // Calculate final base price with all factors
+                int basePrice = (int)(routeBase + routeMultiplier) * 
+                                timeMultiplier * carrierMultiplier * dayMultiplier;
+                
+                // Add small random variation (±5%)
+                int randomVar = ((flightCounter * 17 + day * 13 + i * 7) % 11) - 5;
+                basePrice = basePrice + (basePrice * randomVar / 100);
+                
+                // Ensure minimum price
+                if (basePrice < 1500) basePrice = 1500;
                 
                 stringstream sql;
                 sql << "INSERT OR IGNORE INTO flights VALUES ('"
