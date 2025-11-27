@@ -742,27 +742,52 @@ void MainWindow::showBookingDialog(Flight* flight) {
         seatButtons.clear();
         selectedSeat = nullptr;
 
-        vector<Seat*> availableSeats = flight->getAvailableSeatsByClass(seatClass.toStdString());
+        vector<Seat*> allSeats = flight->getSeatsByClass(seatClass.toStdString());
         
-        if (availableSeats.empty()) {
-            QLabel* noSeats = new QLabel("No available seats in this class");
+        if (allSeats.empty()) {
+            QLabel* noSeats = new QLabel("No seats in this class");
             noSeats->setStyleSheet("color: #ef4444; padding: 20px; font-size: 14px;");
             noSeats->setAlignment(Qt::AlignCenter);
             seatLayout->addWidget(noSeats);
             return;
         }
 
-        QLabel* legendLabel = new QLabel(QString("%1 Class - Select a seat").arg(seatClass));
+        // Count available seats
+        int availableCount = 0;
+        for (auto seat : allSeats) {
+            if (!seat->getIsBooked()) availableCount++;
+        }
+
+        QLabel* legendLabel = new QLabel(QString("%1 Class - %2/%3 seats available")
+            .arg(seatClass).arg(availableCount).arg(allSeats.size()));
         legendLabel->setStyleSheet("font-weight: 600; color: #1f2937; font-size: 14px;");
         seatLayout->addWidget(legendLabel);
+
+        // Add legend for seat colors
+        QHBoxLayout* legendLayout = new QHBoxLayout();
+        
+        QLabel* availLegend = new QLabel("● Available");
+        availLegend->setStyleSheet("color: #10b981; font-size: 12px;");
+        legendLayout->addWidget(availLegend);
+        
+        QLabel* bookedLegend = new QLabel("● Booked");
+        bookedLegend->setStyleSheet("color: #9ca3af; font-size: 12px;");
+        legendLayout->addWidget(bookedLegend);
+        
+        QLabel* selectedLegend = new QLabel("● Selected");
+        selectedLegend->setStyleSheet("color: #6366f1; font-size: 12px;");
+        legendLayout->addWidget(selectedLegend);
+        
+        legendLayout->addStretch();
+        seatLayout->addLayout(legendLayout);
 
         QGridLayout* seatsGrid = new QGridLayout();
         seatsGrid->setSpacing(10);
 
         int seatsPerRow = (seatClass == "Economy") ? 10 : 5;
         
-        for (size_t i = 0; i < availableSeats.size(); i++) {
-            SeatButton* btn = new SeatButton(availableSeats[i]);
+        for (size_t i = 0; i < allSeats.size(); i++) {
+            SeatButton* btn = new SeatButton(allSeats[i]);
             connect(btn, &SeatButton::seatSelected, [&, btn](Seat* seat) {
                 for (SeatButton* sb : seatButtons) {
                     sb->setSelected(false);

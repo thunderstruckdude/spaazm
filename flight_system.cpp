@@ -120,6 +120,16 @@ vector<Seat*> Flight::getAvailableSeatsByClass(string seatClass) const {
     return available;
 }
 
+vector<Seat*> Flight::getSeatsByClass(string seatClass) const {
+    vector<Seat*> classSeats;
+    for (auto seat : seats) {
+        if (seat->getSeatClass() == seatClass) {
+            classSeats.push_back(seat);
+        }
+    }
+    return classSeats;
+}
+
 Seat* Flight::getSeatByNumber(int seatNumber) {
     if (seatNumber >= 1 && seatNumber <= totalSeats) {
         return seats[seatNumber - 1];

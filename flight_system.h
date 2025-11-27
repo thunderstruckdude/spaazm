@@ -145,6 +145,13 @@ public:
     vector<Seat*> getAvailableSeatsByClass(string seatClass) const;
     
     /**
+     * @brief Returns all seats by class (both booked and available)
+     * @param seatClass Target seat class
+     * @return Vector of all Seat pointers in the class
+     */
+    vector<Seat*> getSeatsByClass(string seatClass) const;
+    
+    /**
      * @brief Finds seat by number
      * @param seatNumber Seat number (1-100)
      * @return Pointer to Seat or nullptr if not found
