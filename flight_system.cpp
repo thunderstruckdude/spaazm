@@ -389,14 +389,16 @@ void ReservationSystem::populateFlights() {
     string names[] = {"Sky Express", "Cloud Nine", "Wind Jet", "Star Flight", "Thunder Express"};
     string times[] = {"06:00", "10:00", "14:00", "18:00", "21:00"};
     
-    // Generate flights for next 30 days
+    // Generate flights for next 60 days (through January 2026)
     time_t now = time(nullptr);
+    
+    cout << "Generating flights for all " << routes.size() << " routes..." << endl;
     
     sqlite3_exec(db, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
     
     int flightCounter = 1001;
     
-    for (int day = 0; day < 30; day++) {
+    for (int day = 0; day < 60; day++) {
         time_t futureTime = now + (day * 86400);
         struct tm* tm = localtime(&futureTime);
         char dateStr[11];
@@ -434,9 +436,13 @@ void ReservationSystem::populateFlights() {
     if (rc != SQLITE_OK) {
         cerr << "Failed to commit transaction: " << errMsg << endl;
         sqlite3_free(errMsg);
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
     } else {
-        cout << "Successfully populated " << (flightCounter - 1001) << " flights" << endl;
+        int totalFlights = flightCounter - 1001;
+        cout << "Successfully populated " << totalFlights << " flights" << endl;
         cout << "Routes: " << routes.size() << " (all city pairs)" << endl;
+        cout << "Days covered: 60 (November 2025 - January 2026)" << endl;
+        cout << "Expected: " << (routes.size() * 5 * 60) << " flights" << endl;
     }
 }
 

@@ -734,9 +734,20 @@ void MainWindow::showBookingDialog(Flight* flight) {
     Seat* selectedSeat = nullptr;
 
     auto updateSeats = [&](const QString& seatClass) {
+        // Properly clean up all widgets and layouts
         QLayoutItem* item;
         while ((item = seatLayout->takeAt(0)) != nullptr) {
-            delete item->widget();
+            if (item->widget()) {
+                delete item->widget();
+            }
+            if (item->layout()) {
+                QLayoutItem* subItem;
+                while ((subItem = item->layout()->takeAt(0)) != nullptr) {
+                    delete subItem->widget();
+                    delete subItem;
+                }
+                delete item->layout();
+            }
             delete item;
         }
         seatButtons.clear();
