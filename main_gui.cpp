@@ -16,6 +16,10 @@
 #include <QFrame>
 #include <QDateEdit>
 #include <QDate>
+#include <QGraphicsDropShadowEffect>
+#include <QPropertyAnimation>
+#include <QParallelAnimationGroup>
+#include <QEasingCurve>
 #include <iostream>
 #include "flight_system.h"
 
@@ -29,84 +33,86 @@ public:
     FlightCard(Flight* flight, QWidget* parent = nullptr) : QFrame(parent), flight(flight) {
         setFrameShape(QFrame::StyledPanel);
         setStyleSheet(
-            "FlightCard {"
-            "   background: white;"
-            "   border-radius: 12px;"
-            "   border: 1px solid #e5e7eb;"
-            "}"
-            "FlightCard:hover {"
-            "   border-color: #6366f1;"
-            "}"
+            "FlightCard { background: white; border-radius: 12px; border: 1px solid #e5e7eb; }"
+            "FlightCard:hover { border-color: #a5b4fc; }"
         );
 
         QVBoxLayout* layout = new QVBoxLayout(this);
         layout->setSpacing(12);
         layout->setContentsMargins(20, 20, 20, 20);
 
-        // Flight name
+        QHBoxLayout* headerLayout = new QHBoxLayout();
+        
         QLabel* nameLabel = new QLabel(QString::fromStdString(flight->getFlightName()));
-        nameLabel->setStyleSheet("font-size: 18px; font-weight: 600; color: #1f2937;");
-        nameLabel->setWordWrap(true);
-        layout->addWidget(nameLabel);
-
-        // Flight number
+        nameLabel->setStyleSheet("font-size: 16px; font-weight: 700; color: #111827;");
+        headerLayout->addWidget(nameLabel);
+        
+        headerLayout->addStretch();
+        
         QLabel* flightLabel = new QLabel(QString::fromStdString(flight->getFlightNumber()));
-        flightLabel->setStyleSheet("font-size: 13px; font-weight: 500; color: #6366f1;");
-        layout->addWidget(flightLabel);
+        flightLabel->setStyleSheet("font-size: 12px; color: #6b7280;");
+        headerLayout->addWidget(flightLabel);
+        
+        layout->addLayout(headerLayout);
 
-        // Route
-        QLabel* routeLabel = new QLabel(QString::fromStdString(
-            flight->getSource() + " → " + flight->getDestination()
-        ));
-        routeLabel->setStyleSheet("font-size: 16px; color: #4b5563; font-weight: 500;");
-        routeLabel->setWordWrap(true);
-        layout->addWidget(routeLabel);
+        // Separator line
+        QFrame* separator = new QFrame();
+        separator->setFrameShape(QFrame::HLine);
+        separator->setStyleSheet("background: #e5e7eb; max-height: 1px;");
+        layout->addWidget(separator);
 
-        // Departure time
+        // Route with visual connection
+        QHBoxLayout* routeLayout = new QHBoxLayout();
+        
+        QString cityStyle = "font-size: 16px; font-weight: 700; color: #1f2937;";
+        
+        QLabel* sourceLabel = new QLabel(QString::fromStdString(flight->getSource()));
+        sourceLabel->setStyleSheet(cityStyle);
+        routeLayout->addWidget(sourceLabel);
+        
+        QLabel* arrow = new QLabel("→");
+        arrow->setStyleSheet("font-size: 20px; color: #6366f1;");
+        routeLayout->addWidget(arrow);
+        
+        QLabel* destLabel = new QLabel(QString::fromStdString(flight->getDestination()));
+        destLabel->setStyleSheet(cityStyle);
+        routeLayout->addWidget(destLabel);
+        
+        routeLayout->addStretch();
+        layout->addLayout(routeLayout);
+
         QLabel* timeLabel = new QLabel(QString::fromStdString(flight->getDepartureTime()));
-        timeLabel->setStyleSheet("font-size: 14px; color: #6b7280;");
+        timeLabel->setStyleSheet("font-size: 13px; color: #6b7280; margin-top: 5px;");
         layout->addWidget(timeLabel);
 
-        // Price and availability
-        QHBoxLayout* infoLayout = new QHBoxLayout();
+        QHBoxLayout* priceLayout = new QHBoxLayout();
+        priceLayout->setContentsMargins(0, 10, 0, 0);
         
-        // Calculate actual Economy class price (cheapest option)
         double economyPrice = flight->calculatePrice("Economy", time(nullptr));
-        QLabel* priceLabel = new QLabel(QString("Starting from ₹%1").arg(economyPrice, 0, 'f', 0));
-        priceLabel->setStyleSheet("font-size: 16px; font-weight: 600; color: #059669;");
-        infoLayout->addWidget(priceLabel);
+        QLabel* priceLabel = new QLabel(QString("From ₹%1").arg(economyPrice, 0, 'f', 0));
+        priceLabel->setStyleSheet("font-size: 18px; font-weight: 700; color: #059669;");
+        priceLayout->addWidget(priceLabel);
         
-        infoLayout->addStretch();
+        priceLayout->addStretch();
         
-        QLabel* seatsLabel = new QLabel(QString("%1 seats left").arg(flight->getAvailableSeatsCount()));
-        seatsLabel->setStyleSheet("font-size: 13px; color: #6b7280;");
-        infoLayout->addWidget(seatsLabel);
+        int availSeats = flight->getAvailableSeatsCount();
+        QString availColor = availSeats > 50 ? "#10b981" : (availSeats > 20 ? "#f59e0b" : "#ef4444");
+        QLabel* seatsLabel = new QLabel(QString("%1 seats").arg(availSeats));
+        seatsLabel->setStyleSheet(QString("font-size: 12px; color: %1;").arg(availColor));
+        priceLayout->addWidget(seatsLabel);
         
-        layout->addLayout(infoLayout);
+        layout->addLayout(priceLayout);
 
-        // Book button
         QPushButton* bookBtn = new QPushButton("Book Flight");
+        bookBtn->setCursor(Qt::PointingHandCursor);
         bookBtn->setStyleSheet(
-            "QPushButton {"
-            "   background: #6366f1;"
-            "   color: white;"
-            "   border: none;"
-            "   border-radius: 8px;"
-            "   padding: 10px 20px;"
-            "   font-weight: 600;"
-            "   font-size: 14px;"
-            "}"
-            "QPushButton:hover {"
-            "   background: #4f46e5;"
-            "}"
-            "QPushButton:pressed {"
-            "   background: #4338ca;"
-            "}"
+            "QPushButton { background: #6366f1; color: white; border: none; border-radius: 6px; "
+            "padding: 10px 20px; font-weight: 600; font-size: 14px; }"
+            "QPushButton:hover { background: #4f46e5; }"
+            "QPushButton:pressed { background: #4338ca; }"
         );
         connect(bookBtn, &QPushButton::clicked, this, &FlightCard::onBookClicked);
         layout->addWidget(bookBtn);
-
-        setMinimumHeight(220);
     }
 
 signals:
@@ -209,8 +215,8 @@ private:
 };
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
-    setWindowTitle("Spaazm Flights - Flight Reservation System");
-    setMinimumSize(1200, 800);
+    setWindowTitle("✈ Spaazm Flights - Premium Flight Booking");
+    setMinimumSize(1280, 850);
 
     system = new ReservationSystem();
 
@@ -235,9 +241,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     mainLayout->addWidget(stackedWidget);
 
     setStyleSheet(
-        "QMainWindow { background: #f9fafb; }"
-        "QLabel { font-family: 'Segoe UI', Arial; }"
-        "QPushButton { font-family: 'Segoe UI', Arial; }"
+        "QMainWindow { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f9fafb, stop:1 #f3f4f6); }"
+        "QLabel { font-family: 'Segoe UI', 'Roboto', 'Helvetica', Arial, sans-serif; }"
+        "QPushButton { font-family: 'Segoe UI', 'Roboto', 'Helvetica', Arial, sans-serif; }"
     );
 }
 
@@ -247,45 +253,75 @@ MainWindow::~MainWindow() {
 
 QWidget* MainWindow::createHeader() {
     QWidget* header = new QWidget();
-    header->setStyleSheet("background: white; border-bottom: 1px solid #e5e7eb;");
-    header->setFixedHeight(80);
+    header->setStyleSheet(
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #ffffff, stop:1 #fefeff);"
+        "border-bottom: 2px solid #e5e7eb;"
+    );
+    header->setFixedHeight(90);
+
+    // Add shadow to header
+    QGraphicsDropShadowEffect* headerShadow = new QGraphicsDropShadowEffect();
+    headerShadow->setBlurRadius(15);
+    headerShadow->setColor(QColor(0, 0, 0, 20));
+    headerShadow->setOffset(0, 2);
+    header->setGraphicsEffect(headerShadow);
 
     QHBoxLayout* layout = new QHBoxLayout(header);
-    layout->setContentsMargins(30, 0, 30, 0);
+    layout->setContentsMargins(40, 0, 40, 0);
 
-    QLabel* logo = new QLabel("✈ Spaazm Flights");
-    logo->setStyleSheet("font-size: 24px; font-weight: 700; color: #6366f1;");
-    layout->addWidget(logo);
+    // Enhanced logo with gradient background
+    QWidget* logoContainer = new QWidget();
+    logoContainer->setStyleSheet(
+        "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #6366f1, stop:1 #8b5cf6);"
+        "border-radius: 12px; padding: 8px 16px;"
+    );
+    QHBoxLayout* logoLayout = new QHBoxLayout(logoContainer);
+    logoLayout->setContentsMargins(8, 4, 8, 4);
+    
+    QLabel* logoIcon = new QLabel("✈");
+    logoIcon->setStyleSheet("font-size: 28px; color: white;");
+    logoLayout->addWidget(logoIcon);
+    
+    QLabel* logoText = new QLabel("Spaazm Flights");
+    logoText->setStyleSheet("font-size: 22px; font-weight: 800; color: white; letter-spacing: 1px;");
+    logoLayout->addWidget(logoText);
+    
+    layout->addWidget(logoContainer);
 
     layout->addStretch();
 
-    flightsBtn = new QPushButton("Flights");
-    bookingsBtn = new QPushButton("My Bookings");
+    // Enhanced navigation buttons with icons
+    flightsBtn = new QPushButton("🔍 Search Flights");
+    bookingsBtn = new QPushButton("📋 My Bookings");
+
+    flightsBtn->setCursor(Qt::PointingHandCursor);
+    bookingsBtn->setCursor(Qt::PointingHandCursor);
 
     QString navBtnStyle = 
         "QPushButton {"
         "   background: transparent;"
-        "   border: none;"
+        "   border: 2px solid transparent;"
         "   color: #6b7280;"
         "   font-size: 15px;"
-        "   font-weight: 500;"
-        "   padding: 10px 20px;"
-        "   border-radius: 8px;"
+        "   font-weight: 600;"
+        "   padding: 12px 24px;"
+        "   border-radius: 10px;"
         "}"
         "QPushButton:hover {"
         "   background: #f3f4f6;"
         "   color: #1f2937;"
+        "   border: 2px solid #e5e7eb;"
         "}";
 
     QString activeBtnStyle = 
         "QPushButton {"
-        "   background: #eef2ff;"
-        "   border: none;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #eef2ff, stop:1 #e0e7ff);"
+        "   border: 2px solid #6366f1;"
         "   color: #6366f1;"
         "   font-size: 15px;"
-        "   font-weight: 600;"
-        "   padding: 10px 20px;"
-        "   border-radius: 8px;"
+        "   font-weight: 700;"
+        "   padding: 12px 24px;"
+        "   border-radius: 10px;"
         "}";
 
     flightsBtn->setStyleSheet(activeBtnStyle);
@@ -297,31 +333,58 @@ QWidget* MainWindow::createHeader() {
     layout->addWidget(flightsBtn);
     layout->addWidget(bookingsBtn);
 
+    // Add user profile icon
+    QPushButton* profileBtn = new QPushButton("👤");
+    profileBtn->setCursor(Qt::PointingHandCursor);
+    profileBtn->setStyleSheet(
+        "QPushButton {"
+        "   background: #f3f4f6;"
+        "   border: 2px solid #e5e7eb;"
+        "   color: #1f2937;"
+        "   font-size: 20px;"
+        "   padding: 10px;"
+        "   border-radius: 12px;"
+        "   min-width: 48px;"
+        "   min-height: 48px;"
+        "}"
+        "QPushButton:hover {"
+        "   background: #e5e7eb;"
+        "   border: 2px solid #d1d5db;"
+        "}"
+    );
+    layout->addWidget(profileBtn);
+
     return header;
 }
 
 QWidget* MainWindow::createFlightsPage() {
     QWidget* page = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(page);
-    layout->setContentsMargins(40, 30, 40, 30);
-    layout->setSpacing(30);
+    layout->setContentsMargins(30, 20, 30, 20);
+    layout->setSpacing(20);
 
-    QLabel* title = new QLabel("Find Your Perfect Flight");
-    title->setStyleSheet("font-size: 32px; font-weight: 700; color: #1f2937;");
+    // Simple header
+    QLabel* title = new QLabel("Search Flights");
+    title->setStyleSheet("font-size: 28px; font-weight: 700; color: #1f2937;");
     layout->addWidget(title);
 
-    QLabel* subtitle = new QLabel("Select your route and travel date to see available flights");
-    subtitle->setStyleSheet("font-size: 16px; color: #6b7280; margin-bottom: 10px;");
+    QLabel* subtitle = new QLabel("Select your route and travel date");
+    subtitle->setStyleSheet("font-size: 15px; color: #6b7280; margin-bottom: 10px;");
     layout->addWidget(subtitle);
 
     // Search panel
     QFrame* searchPanel = new QFrame();
-    searchPanel->setStyleSheet("QFrame { background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 20px; }");
+    searchPanel->setStyleSheet(
+        "QFrame { background: white; border-radius: 12px; border: 1px solid #e5e7eb; }"
+    );
+    
     QVBoxLayout* searchLayout = new QVBoxLayout(searchPanel);
-    searchLayout->setSpacing(15);
+    searchLayout->setContentsMargins(24, 24, 24, 24);
+    searchLayout->setSpacing(20);
 
     // From/To row
     QHBoxLayout* routeLayout = new QHBoxLayout();
+    routeLayout->setSpacing(15);
     
     QVBoxLayout* fromLayout = new QVBoxLayout();
     QLabel* fromLabel = new QLabel("From:");
@@ -355,7 +418,7 @@ QWidget* MainWindow::createFlightsPage() {
     
     sourceSelector->setStyleSheet(
         "QComboBox { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background-color: white; color: black; min-width: 180px; }"
+        "font-size: 14px; background-color: white; color: black; min-width: 200px; }"
         "QComboBox::drop-down { border: none; width: 30px; }"
         "QComboBox::down-arrow { image: url(none); border-left: 5px solid transparent; "
         "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
@@ -400,7 +463,7 @@ QWidget* MainWindow::createFlightsPage() {
     
     destSelector->setStyleSheet(
         "QComboBox { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background-color: white; color: black; min-width: 180px; }"
+        "font-size: 14px; background-color: white; color: black; min-width: 200px; }"
         "QComboBox::drop-down { border: none; width: 30px; }"
         "QComboBox::down-arrow { image: url(none); border-left: 5px solid transparent; "
         "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
@@ -411,40 +474,42 @@ QWidget* MainWindow::createFlightsPage() {
     routeLayout->addStretch();
     searchLayout->addLayout(routeLayout);
 
-    // Date row
-    QHBoxLayout* dateLayout = new QHBoxLayout();
-    QLabel* dateLabel = new QLabel("Travel Date:");
-    dateLabel->setStyleSheet("font-size: 14px; font-weight: 600; color: #374151;");
-    dateLayout->addWidget(dateLabel);
+    QLabel* dateLabel = new QLabel("Date:");
+    dateLabel->setStyleSheet("font-size: 14px; font-weight: 600; color: #374151; margin-top: 10px;");
+    searchLayout->addWidget(dateLabel);
 
     dateSelector = new QDateEdit();
     dateSelector->setCalendarPopup(true);
     dateSelector->setMinimumDate(QDate::currentDate());
-    dateSelector->setMaximumDate(QDate::currentDate().addDays(59));  // Database has 60 days
+    dateSelector->setMaximumDate(QDate::currentDate().addDays(59));
     dateSelector->setDate(QDate::currentDate().addDays(7));
-    dateSelector->setDisplayFormat("MMM dd, yyyy");
+    dateSelector->setDisplayFormat("ddd, MMM dd yyyy");
     dateSelector->setStyleSheet(
         "QDateEdit { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; min-width: 200px; }"
+        "font-size: 14px; background: white; color: black; min-width: 240px; }"
+        "QDateEdit::drop-down { border: none; width: 30px; }"
+        "QDateEdit::down-arrow { image: url(none); border-left: 5px solid transparent; "
+        "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
     );
-    dateLayout->addWidget(dateSelector);
-    dateLayout->addStretch();
+    searchLayout->addWidget(dateSelector);
     
-    searchLayout->addLayout(dateLayout);
-
-    // Search button
     QPushButton* searchBtn = new QPushButton("Search Flights");
+    searchBtn->setCursor(Qt::PointingHandCursor);
     searchBtn->setStyleSheet(
-        "QPushButton { background: #6366f1; color: white; border: none; "
-        "border-radius: 8px; padding: 12px 32px; font-weight: 600; font-size: 15px; }"
+        "QPushButton { background: #6366f1; color: white; border: none; border-radius: 8px; "
+        "padding: 12px 32px; font-weight: 600; font-size: 15px; margin-top: 15px; }"
         "QPushButton:hover { background: #4f46e5; }"
+        "QPushButton:pressed { background: #4338ca; }"
     );
     connect(searchBtn, &QPushButton::clicked, this, &MainWindow::searchFlights);
-    searchLayout->addWidget(searchBtn, 0, Qt::AlignLeft);
+    searchLayout->addWidget(searchBtn);
 
     layout->addWidget(searchPanel);
 
-    // Flights grid
+    QLabel* resultsHeader = new QLabel("Available Flights");
+    resultsHeader->setStyleSheet("font-size: 20px; font-weight: 600; color: #1f2937; margin-top: 20px;");
+    layout->addWidget(resultsHeader);
+
     QScrollArea* scrollArea = new QScrollArea();
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
@@ -452,7 +517,7 @@ QWidget* MainWindow::createFlightsPage() {
 
     flightsScrollContent = new QWidget();
     flightsLayout = new QGridLayout(flightsScrollContent);
-    flightsLayout->setSpacing(20);
+    flightsLayout->setSpacing(24);
     flightsLayout->setContentsMargins(0, 0, 0, 0);
 
     scrollArea->setWidget(flightsScrollContent);

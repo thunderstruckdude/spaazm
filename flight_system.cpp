@@ -57,7 +57,7 @@ double Flight::calculatePrice(string seatClass, time_t bookingTime) const {
     // Demand-based pricing
     int bookedSeats = getBookedSeatsCount();
     double occupancyRate = (double)bookedSeats / totalSeats;
-    price *= (1.0 + occupancyRate * 0.5);
+    price *= (1.0 + occupancyRate *  0.5);
     
     // Days until departure pricing
     double daysUntilDeparture = difftime(departureTimestamp, bookingTime) / (60 * 60 * 24);
@@ -339,7 +339,13 @@ void ReservationSystem::initDatabase() {
         "flight_date TEXT,"
         "seat_number INTEGER,"
         "passenger_name TEXT,"
-        "PRIMARY KEY (flight_number, flight_date, seat_number));";
+        "PRIMARY KEY (flight_number, flight_date, seat_number));"
+        
+        "CREATE TABLE IF NOT EXISTS db_version ("
+        "version INTEGER PRIMARY KEY,"
+        "expected_routes INTEGER,"
+        "expected_flights INTEGER,"
+        "created_at INTEGER);";
     
     char* errMsg = nullptr;
     rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
@@ -359,20 +365,48 @@ void ReservationSystem::populateFlights() {
         return;
     }
     
-    // Check if already populated
-    sqlite3_stmt* check;
-    int rc = sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM flights;", -1, &check, nullptr);
+    const int DB_VERSION = 2;  // Increment when flight generation logic changes
+    const int EXPECTED_ROUTES = 90;  // 10 cities, 9 destinations each
+    const int EXPECTED_FLIGHTS = 27000;  // 90 routes × 5 carriers × 60 days
+    
+    // Check database version and validate data integrity
+    sqlite3_stmt* versionCheck = nullptr;
+    int rc = sqlite3_prepare_v2(db, "SELECT version, expected_routes, expected_flights FROM db_version WHERE version = ?;", -1, &versionCheck, nullptr);
+    bool needsRegeneration = true;
+    
     if (rc == SQLITE_OK) {
-        if (sqlite3_step(check) == SQLITE_ROW) {
-            int count = sqlite3_column_int(check, 0);
-            if (count > 0) {
-                cout << "Database already has " << count << " flights" << endl;
-                sqlite3_finalize(check);
-                return;
+        sqlite3_bind_int(versionCheck, 1, DB_VERSION);
+        if (sqlite3_step(versionCheck) == SQLITE_ROW) {
+            int storedRoutes = sqlite3_column_int(versionCheck, 1);
+            int storedFlights = sqlite3_column_int(versionCheck, 2);
+            
+            if (storedRoutes == EXPECTED_ROUTES && storedFlights == EXPECTED_FLIGHTS) {
+                // Version matches, now verify actual data
+                sqlite3_stmt* countCheck = nullptr;
+                int rc2 = sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM flights;", -1, &countCheck, nullptr);
+                if (rc2 == SQLITE_OK) {
+                    if (sqlite3_step(countCheck) == SQLITE_ROW) {
+                        int actualCount = sqlite3_column_int(countCheck, 0);
+                        if (actualCount == EXPECTED_FLIGHTS) {
+                            cout << "Database already has " << actualCount << " flights (version " << DB_VERSION << ")" << endl;
+                            needsRegeneration = false;
+                        }
+                    }
+                    sqlite3_finalize(countCheck);
+                }
             }
         }
-        sqlite3_finalize(check);
+        sqlite3_finalize(versionCheck);
     }
+    
+    if (!needsRegeneration) {
+        return;
+    }
+    
+    // Clear old data if regenerating
+    cout << "Regenerating flight database (version " << DB_VERSION << ")..." << endl;
+    sqlite3_exec(db, "DELETE FROM flights;", nullptr, nullptr, nullptr);
+    sqlite3_exec(db, "DELETE FROM db_version;", nullptr, nullptr, nullptr);
     
     // All 10 cities
     vector<string> cities = {
@@ -496,6 +530,18 @@ void ReservationSystem::populateFlights() {
         cout << "Routes: " << routes.size() << " (all city pairs)" << endl;
         cout << "Days covered: 60 (November 2025 - January 2026)" << endl;
         cout << "Expected: " << (routes.size() * 5 * 60) << " flights" << endl;
+        
+        // Store version info
+        const int DB_VERSION = 2;
+        stringstream versionSql;
+        versionSql << "INSERT OR REPLACE INTO db_version VALUES (" 
+                   << DB_VERSION << ", " 
+                   << routes.size() << ", " 
+                   << totalFlights << ", " 
+                   << time(nullptr) << ");";
+        sqlite3_exec(db, versionSql.str().c_str(), nullptr, nullptr, nullptr);
+        
+        cout << "Database version " << DB_VERSION << " set successfully" << endl;
     }
 }
 
