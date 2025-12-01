@@ -738,21 +738,21 @@ void MainWindow::showBookingDialog(Flight* flight) {
     QLineEdit* nameInput = new QLineEdit();
     nameInput->setPlaceholderText("Enter your full name");
     nameInput->setStyleSheet(
-        "QLineEdit { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; }"
+        "QLineEdit { padding: 12px; border: 1px solid #0b1018ff; border-radius: 8px; "
+        "font-size: 14px; background: black; }"
         "QLineEdit:focus { border-color: #6366f1; }"
     );
     layout->addWidget(nameInput);
 
     QLabel* emailLabel = new QLabel("Email:");
-    emailLabel->setStyleSheet("font-weight: 600; color: #374151; margin-top: 5px;");
+    emailLabel->setStyleSheet("font-weight: 600; color: #030405ff; margin-top: 5px;");
     layout->addWidget(emailLabel);
 
     QLineEdit* emailInput = new QLineEdit();
     emailInput->setPlaceholderText("your@email.com");
     emailInput->setStyleSheet(
-        "QLineEdit { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; }"
+        "QLineEdit { padding: 12px; border: 1px solid #13181eff; border-radius: 8px; "
+        "font-size: 14px; background: black; }"
         "QLineEdit:focus { border-color: #6366f1; }"
     );
     layout->addWidget(emailInput);
@@ -765,7 +765,7 @@ void MainWindow::showBookingDialog(Flight* flight) {
     phoneInput->setPlaceholderText("+91 XXXXXXXXXX");
     phoneInput->setStyleSheet(
         "QLineEdit { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; "
-        "font-size: 14px; background: white; }"
+        "font-size: 14px; background: black; }"
         "QLineEdit:focus { border-color: #6366f1; }"
     );
     layout->addWidget(phoneInput);
@@ -779,13 +779,13 @@ void MainWindow::showBookingDialog(Flight* flight) {
     classCombo->setStyleSheet(
         "QComboBox { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; "
         "font-size: 14px; background-color: #ffffff; color: #1f2937; }"
-        "QComboBox::drop-down { border: none; width: 30px; background-color: transparent; }"
+        "QComboBox::drop-down { border: none; width: 30px; background-color: black; }"
         "QComboBox::down-arrow { image: url(none); border-left: 5px solid transparent; "
         "border-right: 5px solid transparent; border-top: 5px solid #6b7280; width: 0; height: 0; }"
-        "QComboBox QAbstractItemView { background-color: #ffffff; color: #1f2937; border: 1px solid #d1d5db; "
+        "QComboBox QAbstractItemView { background-color: #5c5353ff; color: #1f2937; border: 1px solid #d1d5db; "
         "border-radius: 4px; padding: 4px; outline: none; selection-background-color: #eef2ff; selection-color: #4f46e5; }"
         "QComboBox QAbstractItemView::item { padding: 8px; min-height: 25px; background-color: #ffffff; color: #1f2937; }"
-        "QComboBox QAbstractItemView::item:hover { background-color: #f3f4f6; }"
+        "QComboBox QAbstractItemView::item:hover { background-color: #3b3e45ff; }"
         "QComboBox QAbstractItemView::item:selected { background-color: #eef2ff; color: #4f46e5; }"
     );
     layout->addWidget(classCombo);
